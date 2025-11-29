@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cyber Corner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { --accent-1: #667eea; --accent-2: #764ba2; --muted: #666; }
+    body { margin:0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg,var(--accent-1),var(--accent-2)); min-height:100vh; color:#222; }
+    .app-container { display:flex; min-height:100vh; }
+    .nav-sidebar { width:260px; background: rgba(255,255,255,0.95); border-right:3px solid #333; position:fixed; left:0; top:0; height:100%; padding:18px; box-shadow:4px 0 15px rgba(0,0,0,0.25); overflow:auto; }
+    .nav-header { text-align:center; margin-bottom:8px; }
+    .main-content { margin-left:280px; padding:28px; flex:1; }
+    h1 { color: var(--accent-1); margin:0; font-size:36px; }
+    .btn { background: linear-gradient(135deg,var(--accent-1),var(--accent-2)); color:white; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; }
+    .btn-danger { background:#ff6b6b; color:white; }
+    .card { background: white; padding:16px; border-radius:12px; box-shadow:4px 4px 0 rgba(0,0,0,0.12); margin-bottom:12px; }
+    input, textarea, select { width:100%; padding:10px; border-radius:8px; border:2px solid #333; margin-top:8px; font-family:inherit; }
+    .message { position:fixed; top:18px; right:18px; z-index:2000; padding:12px 16px; background:#111; color:#fff; border-radius:8px; display:none; }
+    .small { font-size:13px; color:var(--muted); margin-top:8px; }
+    .nav-item { padding:10px; margin:8px 0; background:#fff; border-radius:8px; cursor:pointer; border:2px solid #333; text-align:center; }
+    .nav-footer { position:absolute; bottom:18px; left:18px; right:18px; }
+    .grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); }
+    #studyModal { position:fixed; left:0; top:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.45); z-index:3000; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <aside class="nav-sidebar" aria-label="Main navigation">
+      <div class="nav-header">
+        <h2>📚 Cyber Corner</h2>
+        <p class="small">Study with speed & games</p>
+      </div>
+
+      <div style="margin-top:8px;">
+        <div class="nav-item" onclick="showSection('home')">🏠 Home</div>
+        <div class="nav-item" onclick="showSection('create')">➕ Create Set</div>
+        <div class="nav-item" onclick="showSection('study')">📖 Study Corner</div>
+        <div class="nav-item" onclick="showSection('test')">📝 Tests</div>
+        <div class="nav-item" onclick="showSection('games')">🎮 Games</div>
+        <div class="nav-item" onclick="showSection('mnemonics')">🧠 Mnemonics</div>
+        <div class="nav-item" onclick="showSection('settings')">⚙️ Settings</div>
+      </div>
+
+      <div class="nav-footer">
+        <div id="userEmail" class="small"></div>
+        <button id="logoutBtn" class="btn btn-danger" style="width:100%; margin-top:8px;">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <div>
+          <h1 id="siteTitle">Cyber Corner</h1>
+          <p class="small" id="siteSubtitle">CyberPika's study tool 4 you!</p>
+        </div>
+      </header>
+
+      <section id="homeSection">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h2>Your Flashcard Sets</h2>
+          <button class="btn" id="createSetBtnTop">➕ Create New Set</button>
+        </div>
+        <div id="flashcardGrid" class="grid"></div>
+      </section>
+
+      <section id="createSection" style="display:none;">
+        <h2>➕ Create Flashcard Set</h2>
+        <div class="card">
+          <label>Set Title</label>
+          <input id="setTitle" type="text" placeholder="e.g., Biology Chapter 5" />
+          <label>Description</label>
+          <input id="setDescription" type="text" placeholder="Brief description of this set" />
+          <div id="flashcardsList"></div>
+          <div style="margin-top:12px; display:flex; gap:8px;">
+            <button class="btn" id="addFlashcardBtn">➕ Add Flashcard</button>
+            <button class="btn" id="saveSetBtn">💾 Save Set</button>
+            <button class="btn btn-danger" id="cancelCreateBtn">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="studySection" style="display:none;">
+        <h2>📖 Study Corner</h2>
+        <div id="studySetList"></div>
+        <div id="studyControls" style="margin-top:12px; display:none;">
+          <h3 id="studyingSetTitle"></h3>
+          <button class="btn" id="learnModeBtn">📚 Learn Mode</button>
+          <button class="btn" id="testStudyModeBtn">✏️ Test Mode</button>
+          <button class="btn" id="matchModeBtn">🎯 Match Mode</button>
+          <button class="btn" id="backFromStudyMode">⬅️ Back</button>
+        </div>
+        <div id="studyCardDisplay" style="margin-top:12px; display:none;"></div>
+      </section>
+
+      <section id="testSection" style="display:none;">
+        <h2>📝 Tests</h2>
+        <div class="card">
+          <label>Test Title</label>
+          <input id="testTitle" type="text" placeholder="My Practice Test" />
+          <label>Select Flashcard Set (optional)</label>
+          <select id="testFlashcardSet"><option value="">Manual Test Creation</option></select>
+          <div id="testQuestionsList"></div>
+          <div style="margin-top:12px; display:flex; gap:8px;">
+            <button class="btn" id="addTestQuestion">➕ Add Question</button>
+            <button class="btn" id="saveTestBtn">💾 Save Test</button>
+          </div>
+        </div>
+
+        <div id="savedTests" style="margin-top:16px;"></div>
+      </section>
+
+      <section id="gamesSection" style="display:none;">
+        <h2>🎮 Study Games</h2>
+        <div id="gameSetList"></div>
+      </section>
+
+      <section id="mnemonicsSection" style="display:none;">
+        <h2>🧠 Mnemonics</h2>
+        <div class="card">
+          <label>Topic</label><input id="mnemonicTopic" />
+          <label>Title</label><input id="mnemonicTitle" />
+          <label>Phrase / Acronym</label><textarea id="mnemonicPhrase"></textarea>
+          <div style="margin-top:8px;">
+            <button class="btn" id="saveMnemonicBtn">💾 Save Mnemonic</button>
+          </div>
+        </div>
+        <div id="mnemonicsList"></div>
+      </section>
+
+      <section id="settingsSection" style="display:none;">
+        <h2>⚙️ Settings</h2>
+        <div class="card">
+          <label>Site Title</label><input id="settingSiteTitle" placeholder="Cyber Corner" />
+          <label>Site Subtitle</label><input id="settingSiteSubtitle" placeholder="CyberPika's study tool 4 you!" />
+          <label>Background (CSS)</label><input id="settingBg" placeholder="e.g., linear-gradient(135deg,#667eea,#764ba2)" />
+          <div style="margin-top:8px;">
+            <button class="btn" id="saveSettingsBtn">Save Settings (local)</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="msg" class="message"></div>
+
+  <!-- ===== Supabase client + DB adapter (module 1) ===== -->
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const SUPABASE_URL = 'https://ggxzenrclteljxtqrwev.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdneHplbnJjbHRlbGp4dHFyd2V2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0NDQ4MDYsImV4cCI6MjA4MDAyMDgwNn0.yA8nKgkdyW8BH1v5eYFt8vd-8XOEVUnHDnPY8ykKo8Y';
+
+    // Attach supabase client to window so other modules/scripts can use it
+    window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Provide a DB adapter on window (replacement for dataSdk)
+    window.DB = {
+      async fetchAllForUser() {
+        const { data: { session } } = await window.supabase.auth.getSession();
+        if (!session) return [];
+        const uid = session.user.id;
+        const [rFlash, rMnem, rTests] = await Promise.all([
+          window.supabase.from('flashcard_sets').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
+          window.supabase.from('mnemonics').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
+          window.supabase.from('tests').select('*').eq('user_id', uid).order('created_at', { ascending: false })
+        ]);
+        const items = [];
+        if (!rFlash.error) (rFlash.data || []).forEach(r => items.push({ type: 'flashcard_set', id: r.id, title: r.title, data: JSON.stringify(r.data), created_at: r.created_at, __backendId: r.id }));
+        if (!rMnem.error)  (rMnem.data || []).forEach(r => items.push({ type: 'mnemonic', id: r.id, title: r.title, data: JSON.stringify(r.data), created_at: r.created_at, __backendId: r.id }));
+        if (!rTests.error) (rTests.data || []).forEach(r => items.push({ type: 'test', id: r.id, title: r.title, data: JSON.stringify(r.data), created_at: r.created_at, __backendId: r.id }));
+        return items;
+      },
+
+      async createItem({ type, title, data }) {
+        const map = { flashcard_set: 'flashcard_sets', mnemonic: 'mnemonics', test: 'tests' }[type];
+        if (!map) return { isOk:false, error: new Error('Unknown type') };
+        const { data: { session } } = await window.supabase.auth.getSession();
+        if (!session) return { isOk:false, error: new Error('Not authenticated') };
+        const payload = { user_id: session.user.id, title, data: (typeof data === 'string' ? JSON.parse(data) : data) };
+        const res = await window.supabase.from(map).insert([payload]).select().single();
+        if (res.error) return { isOk:false, error: res.error };
+        return { isOk:true, created: res.data };
+      },
+
+      async deleteItem({ type, id }) {
+        const map = { flashcard_set: 'flashcard_sets', mnemonic: 'mnemonics', test: 'tests' }[type];
+        if (!map) return { isOk:false, error: new Error('Unknown type') };
+        const res = await window.supabase.from(map).delete().eq('id', id);
+        if (res.error) return { isOk:false, error: res.error };
+        return { isOk:true };
+      },
+
+      subscribeToChanges(onChange) {
+        const channel = window.supabase.channel('cc_all_changes');
+        channel.on('postgres_changes', { event: '*', schema: 'public', table: 'flashcard_sets' }, payload => onChange(payload));
+        channel.on('postgres_changes', { event: '*', schema: 'public', table: 'mnemonics' }, payload => onChange(payload));
+        channel.on('postgres_changes', { event: '*', schema: 'public', table: 'tests' }, payload => onChange(payload));
+        channel.subscribe();
+        return { unsubscribe: () => window.supabase.removeChannel(channel) };
+      }
+    };
+  </script>
+
+  <!-- ===== Application logic (module 2) ===== -->
+  <script type="module">
+    // Use window.supabase and window.DB (defined by previous module)
+    const supabase = window.supabase;
+    const DB = window.DB;
+
+    // --- App State ---
+    let appData = [];
+    let currentFlashcards = [];
+    let currentStudySet = null;
+    let currentTestQuestions = [];
+    let currentGameSet = null;
+    let dbSubscription = null;
+
+    // UI utilities
+    const $ = id => document.getElementById(id);
+    function showMessage(text, timeout=2500) {
+      const el = $('msg');
+      el.textContent = text;
+      el.style.display = 'block';
+      clearTimeout(el._t);
+      el._t = setTimeout(()=> el.style.display='none', timeout);
+    }
+
+    function escapeHtml(unsafe) {
+      if (!unsafe) return '';
+      return String(unsafe).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');
+    }
+
+    function showSection(name) {
+      ['home','create','study','test','games','mnemonics','settings'].forEach(s => {
+        const el = $(s + 'Section');
+        if (el) el.style.display = (s === name) ? 'block' : 'none';
+      });
+    }
+    window.showSection = showSection;
+
+    // Auth & startup
+    async function checkAuthAndStart() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        window.location.href = '/auth.html';
+        return;
+      }
+      $('userEmail').textContent = 'Signed in as: ' + (session.user.email || session.user.id);
+      await loadAppData();
+
+      // realtime
+      dbSubscription = DB.subscribeToChanges(async () => {
+        appData = await DB.fetchAllForUser();
+        updateUI();
+      });
+    }
+
+    async function loadAppData() {
+      appData = await DB.fetchAllForUser();
+      updateUI();
+    }
+
+    function updateUI() {
+      const flashcardSets = appData.filter(i => i.type === 'flashcard_set');
+      const mnemonics = appData.filter(i => i.type === 'mnemonic');
+      const tests = appData.filter(i => i.type === 'test');
+
+      renderFlashcardGrid(flashcardSets);
+      renderStudySetList(flashcardSets);
+      renderGameSetList(flashcardSets);
+      renderMnemonicsList(mnemonics);
+      renderSavedTests(tests);
+      updateTestFlashcardSetDropdown(flashcardSets);
+    }
+
+    function renderFlashcardGrid(sets) {
+      const el = $('flashcardGrid');
+      if (!sets || sets.length === 0) {
+        el.innerHTML = '<div class="card">No flashcard sets yet. Create one!</div>'; return;
+      }
+      el.innerHTML = sets.map(s => {
+        let cnt = 0, desc = '';
+        try { const d = JSON.parse(s.data); cnt = d.flashcards?.length || 0; desc = d.description || ''; } catch(e){}
+        return `<div class="card">
+          <h3>${escapeHtml(s.title)}</h3>
+          <p class="small">${escapeHtml(desc)}</p>
+          <p><strong>${cnt} cards</strong></p>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn" onclick="studyFlashcardSet('${s.__backendId}')">📖 Study</button>
+            <button class="btn" onclick="prepareCreateFromSet('${s.__backendId}')">✏️ Edit</button>
+            <button class="btn btn-danger" onclick="deleteFlashcardSet('${s.__backendId}')">🗑️ Delete</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderStudySetList(sets) {
+      const el = $('studySetList');
+      if (!sets || sets.length === 0) { el.innerHTML = '<div class="card">No sets to study.</div>'; return; }
+      el.innerHTML = sets.map(s => `<div class="card"><h4>${escapeHtml(s.title)}</h4>
+        <p class="small">${escapeHtml((JSON.parseSafe(s.data)||{}).description||'')}</p>
+        <div style="display:flex; gap:8px;"><button class="btn" onclick="selectStudySet('${s.__backendId}')">Select</button></div></div>`).join('');
+    }
+
+    function renderGameSetList(sets) {
+      const el = $('gameSetList');
+      if (!sets || sets.length === 0) { el.innerHTML = '<div class="card">No sets for games.</div>'; return; }
+      el.innerHTML = sets.map(s => `<div class="card"><h4>${escapeHtml(s.title)}</h4>
+        <div style="display:flex; gap:8px;"><button class="btn" onclick="selectGameSet('${s.__backendId}')">Play</button></div></div>`).join('');
+    }
+
+    function renderMnemonicsList(list) {
+      const el = $('mnemonicsList');
+      if (!list || list.length === 0) { el.innerHTML = '<div class="card">No mnemonics yet.</div>'; return; }
+      el.innerHTML = list.map(m => `<div class="card"><h4>${escapeHtml(m.title)}</h4>
+        <p class="small">Topic: ${escapeHtml((JSON.parseSafe(m.data)||{}).topic||'')}</p>
+        <p>${escapeHtml((JSON.parseSafe(m.data)||{}).phrase||'')}</p>
+        <div style="display:flex; gap:8px;"><button class="btn btn-danger" onclick="deleteMnemonic('${m.__backendId}')">Delete</button></div></div>`).join('');
+    }
+
+    function renderSavedTests(list) {
+      const el = $('savedTests');
+      if (!list || list.length === 0) { el.innerHTML = '<div class="card">No saved tests</div>'; return; }
+      el.innerHTML = list.map(t => {
+        const d = JSON.parseSafe(t.data) || {};
+        return `<div class="card"><h4>${escapeHtml(t.title)}</h4>
+          <p class="small">${(d.questions||[]).length} questions</p>
+          <div style="display:flex; gap:8px;">
+            <button class="btn" onclick="takeTest('${t.__backendId}')">✏️ Take</button>
+            <button class="btn btn-danger" onclick="deleteTest('${t.__backendId}')">🗑️ Delete</button>
+          </div></div>`;
+      }).join('');
+    }
+
+    function updateTestFlashcardSetDropdown(sets) {
+      const sel = $('testFlashcardSet');
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">Manual Test Creation</option>' + (sets.map(s => `<option value="${s.__backendId}">${escapeHtml(s.title)}</option>`).join(''));
+      if (cur) sel.value = cur;
+    }
+
+    // --- Create flow ---
+    document.getElementById('addFlashcardBtn').addEventListener('click', () => {
+      currentFlashcards.push({ term:'', definition:'' });
+      renderFlashcardCreator();
+    });
+
+    function renderFlashcardCreator() {
+      const list = $('flashcardsList');
+      list.innerHTML = currentFlashcards.map((c, i) => `
+        <div style="margin-top:10px; background:#f7f7ff; padding:12px; border-radius:8px;">
+          <strong>Card ${i+1}</strong>
+          <input placeholder="Term" value="${escapeHtml(c.term || '')}" data-idx="${i}" data-field="term" class="cardTerm" />
+          <textarea placeholder="Definition" data-idx="${i}" data-field="definition" class="cardDef">${escapeHtml(c.definition || '')}</textarea>
+          <div style="margin-top:6px;"><button class="btn btn-danger" onclick="removeFlashcard(${i})">Remove</button></div>
+        </div>
+      `).join('');
+
+      list.querySelectorAll('.cardTerm').forEach(el => el.oninput = (e) => {
+        const idx = parseInt(e.target.dataset.idx); currentFlashcards[idx].term = e.target.value;
+      });
+      list.querySelectorAll('.cardDef').forEach(el => el.oninput = (e) => {
+        const idx = parseInt(e.target.dataset.idx); currentFlashcards[idx].definition = e.target.value;
+      });
+    }
+
+    window.removeFlashcard = (i) => { currentFlashcards.splice(i,1); renderFlashcardCreator(); };
+
+    document.getElementById('saveSetBtn').addEventListener('click', async () => {
+      const title = $('setTitle').value.trim();
+      const description = $('setDescription').value.trim();
+      if (!title) { showMessage('Enter a set title'); return; }
+      if (currentFlashcards.length === 0) { showMessage('Add at least one flashcard'); return; }
+
+      const payload = { description, flashcards: currentFlashcards };
+      const r = await DB.createItem({ type: 'flashcard_set', title, data: payload });
+      if (!r.isOk) { showMessage('Error saving set: ' + r.error.message); return; }
+      showMessage('Flashcard set saved!');
+      $('setTitle').value = '';
+      $('setDescription').value = '';
+      currentFlashcards = [];
+      renderFlashcardCreator();
+      appData = await DB.fetchAllForUser();
+      updateUI();
+      showSection('home');
+    });
+
+    document.getElementById('cancelCreateBtn').addEventListener('click', () => {
+      currentFlashcards = [];
+      $('setTitle').value = '';
+      $('setDescription').value = '';
+      renderFlashcardCreator();
+      showSection('home');
+    });
+
+    window.prepareCreateFromSet = async (id) => {
+      const item = appData.find(x => x.__backendId === id && x.type === 'flashcard_set');
+      if (!item) { showMessage('Set not found'); return; }
+      const d = JSON.parseSafe(item.data);
+      $('setTitle').value = item.title;
+      $('setDescription').value = d.description || '';
+      currentFlashcards = d.flashcards || [];
+      renderFlashcardCreator();
+      showSection('create');
+    };
+
+    async function deleteFlashcardSet(id) {
+      if (!confirm('Delete this flashcard set?')) return;
+      const r = await DB.deleteItem({ type:'flashcard_set', id });
+      if (!r.isOk) { showMessage('Delete error: ' + r.error.message); return; }
+      showMessage('Deleted');
+      appData = await DB.fetchAllForUser();
+      updateUI();
+    }
+    window.deleteFlashcardSet = deleteFlashcardSet;
+
+    // --- Mnemonics ---
+    document.getElementById('saveMnemonicBtn').addEventListener('click', async () => {
+      const topic = $('mnemonicTopic').value.trim();
+      const title = $('mnemonicTitle').value.trim();
+      const phrase = $('mnemonicPhrase').value.trim();
+      if (!topic || !title || !phrase) { showMessage('Fill all mnemonic fields'); return; }
+      const r = await DB.createItem({ type:'mnemonic', title, data: { topic, phrase }});
+      if (!r.isOk) { showMessage('Error: ' + r.error.message); return; }
+      showMessage('Mnemonic saved');
+      $('mnemonicTopic').value=''; $('mnemonicTitle').value=''; $('mnemonicPhrase').value='';
+      appData = await DB.fetchAllForUser();
+      updateUI();
+    });
+
+    async function deleteMnemonic(id) {
+      if (!confirm('Delete mnemonic?')) return;
+      const r = await DB.deleteItem({ type:'mnemonic', id });
+      if (!r.isOk) { showMessage('Delete error: ' + r.error.message); return; }
+      showMessage('Deleted mnemonic');
+      appData = await DB.fetchAllForUser();
+      updateUI();
+    }
+    window.deleteMnemonic = deleteMnemonic;
+
+    // --- Tests ---
+    document.getElementById('addTestQuestion').addEventListener('click', () => {
+      currentTestQuestions.push({ question: '', options: ['', ''], answerIndex: 0 });
+      renderTestQuestions();
+    });
+
+    function renderTestQuestions() {
+      const list = $('testQuestionsList');
+      list.innerHTML = currentTestQuestions.map((q,i) => `
+        <div style="margin-top:8px; background:#f8f8ff; padding:10px; border-radius:8px;">
+          <strong>Q${i+1}</strong>
+          <input placeholder="Question" data-i="${i}" class="qText" value="${escapeHtml(q.question)}" />
+          <div style="margin-top:6px;">Options:</div>
+          ${q.options.map((opt,oi) => `<input placeholder="Option ${oi+1}" class="opt" data-i="${i}" data-oi="${oi}" value="${escapeHtml(opt)}" />`).join('')}
+          <div style="margin-top:6px;">
+            <label>Correct answer index:
+              <select class="ansIdx" data-i="${i}">
+                ${q.options.map((_,oi)=>`<option value="${oi}" ${q.answerIndex===oi?'selected':''}>${oi+1}</option>`).join('')}
+              </select>
+            </label>
+          </div>
+          <div style="margin-top:6px;"><button class="btn btn-danger" onclick="removeTestQuestion(${i})">Remove</button></div>
+        </div>
+      `).join('');
+
+      list.querySelectorAll('.qText').forEach(el => el.oninput = (e) => currentTestQuestions[parseInt(e.target.dataset.i)].question = e.target.value);
+      list.querySelectorAll('.opt').forEach(el => el.oninput = (e) => {
+        const i = parseInt(e.target.dataset.i), oi = parseInt(e.target.dataset.oi);
+        currentTestQuestions[i].options[oi] = e.target.value;
+      });
+      list.querySelectorAll('.ansIdx').forEach(el => el.onchange = (e) => {
+        currentTestQuestions[parseInt(e.target.dataset.i)].answerIndex = parseInt(e.target.value);
+      });
+    }
+
+    window.removeTestQuestion = (i) => { currentTestQuestions.splice(i,1); renderTestQuestions(); };
+
+    document.getElementById('saveTestBtn').addEventListener('click', async () => {
+      const title = $('testTitle').value.trim();
+      const linkedSetId = $('testFlashcardSet').value || null;
+      if (!title) { showMessage('Enter test title'); return; }
+      if (currentTestQuestions.length === 0) { showMessage('Add at least one question'); return; }
+      const payload = { questions: currentTestQuestions, linkedSetId, results: [], description: '' };
+      const r = await DB.createItem({ type:'test', title, data: payload });
+      if (!r.isOk) { showMessage('Error saving test: ' + r.error.message); return; }
+      showMessage('Test saved!');
+      $('testTitle').value = ''; currentTestQuestions = []; renderTestQuestions();
+      appData = await DB.fetchAllForUser();
+      updateUI();
+    });
+
+    async function deleteTest(id) {
+      if (!confirm('Delete test?')) return;
+      const r = await DB.deleteItem({ type:'test', id });
+      if (!r.isOk) { showMessage('Delete error'); return; }
+      showMessage('Deleted test');
+      appData = await DB.fetchAllForUser();
+      updateUI();
+    }
+    window.deleteTest = deleteTest;
+
+    async function takeTest(id) {
+      const t = appData.find(x => x.__backendId === id && x.type === 'test');
+      if (!t) { showMessage('Test not found'); return; }
+      const payload = JSON.parseSafe(t.data);
+      const questions = payload.questions || [];
+      let idx = 0, score = 0;
+      function render() {
+        if (idx >= questions.length) {
+          showMessage(`Test finished — Score: ${score}/${questions.length}`);
+          payload.results = payload.results || [];
+          payload.results.push({ score, total: questions.length, ts: new Date().toISOString() });
+          supabase.from('tests').update({ data: payload }).eq('id', id);
+          return;
+        }
+        const q = questions[idx];
+        const modal = document.createElement('div');
+        modal.id = 'studyModal';
+        modal.innerHTML = `<div style="background:#fff;padding:20px;border-radius:12px;max-width:720px;width:90%;">
+          <h3>Q${idx+1}: ${escapeHtml(q.question)}</h3>
+          ${q.options.map((opt,oi)=>`<div style="margin-top:8px;"><button class="btn" onclick="answer('${String(oi)}')">${escapeHtml(opt)}</button></div>`).join('')}
+          <div style="margin-top:10px;"><button class="btn btn-danger" onclick="closeModal()">Close</button></div>
+        </div>`;
+        document.body.appendChild(modal);
+        window.answer = (sel) => {
+          if (parseInt(sel) === q.answerIndex) score++;
+          document.getElementById('studyModal')?.remove();
+          idx++; render();
+        };
+        window.closeModal = () => { document.getElementById('studyModal')?.remove(); idx = questions.length; render(); };
+      }
+      render();
+    }
+    window.takeTest = takeTest;
+
+    // --- Study flows (learn/test/match) ---
+    let currentCardIndex = 0, isFlipped = false;
+    function selectStudySet(id) {
+      const set = appData.find(x => x.__backendId === id && x.type === 'flashcard_set');
+      if (!set) { showMessage('Set not found'); return; }
+      currentStudySet = set;
+      $('studyingSetTitle').textContent = set.title;
+      $('studySetList').style.display = 'none';
+      $('studyControls').style.display = 'block';
+    }
+    window.selectStudySet = selectStudySet;
+
+    $('backFromStudyMode').addEventListener('click', () => {
+      $('studySetList').style.display = 'block';
+      $('studyControls').style.display = 'none';
+      $('studyCardDisplay').style.display = 'none';
+      currentStudySet = null;
+    });
+
+    $('learnModeBtn').addEventListener('click', () => {
+      if (!currentStudySet) return;
+      const data = JSON.parseSafe(currentStudySet.data);
+      startLearnMode(data.flashcards || []);
+    });
+
+    function startLearnMode(flashcards) {
+      if (!flashcards || flashcards.length === 0) { showMessage('No flashcards in this set'); return; }
+      $('studyControls').style.display = 'none';
+      $('studyCardDisplay').style.display = 'block';
+      currentCardIndex = 0; isFlipped = false;
+      renderStudyCard(flashcards);
+    }
+
+    function renderStudyCard(flashcards) {
+      const display = $('studyCardDisplay');
+      const card = flashcards[currentCardIndex];
+      display.innerHTML = `
+        <div class="card" onclick="flipCard()">
+          <h3 style="text-align:center;">${isFlipped ? escapeHtml(card.definition) : escapeHtml(card.term)}</h3>
+          <p style="text-align:center; font-size:13px; color:var(--muted);">Click to flip</p>
+        </div>
+        <div style="text-align:center; margin-top:8px;">
+          <button class="btn" onclick="previousCard()" ${currentCardIndex===0?'disabled':''}>⬅️ Prev</button>
+          <span style="margin:0 12px; font-weight:bold;">Card ${currentCardIndex+1} of ${flashcards.length}</span>
+          <button class="btn" onclick="nextCard()" ${currentCardIndex===flashcards.length-1?'disabled':''}>Next ➡️</button>
+        </div>
+        <div style="text-align:center; margin-top:8px;"><button class="btn btn-danger" onclick="endStudyMode()">End</button></div>
+      `;
+    }
+
+    window.flipCard = () => { isFlipped = !isFlipped; const data = JSON.parseSafe(currentStudySet.data); renderStudyCard(data.flashcards || []); };
+    window.nextCard = () => { const data = JSON.parseSafe(currentStudySet.data); if (currentCardIndex < data.flashcards.length-1) { currentCardIndex++; isFlipped=false; renderStudyCard(data.flashcards); } };
+    window.previousCard = () => { const data = JSON.parseSafe(currentStudySet.data); if (currentCardIndex > 0) { currentCardIndex--; isFlipped=false; renderStudyCard(data.flashcards); } };
+    window.endStudyMode = () => { $('studyControls').style.display='block'; $('studyCardDisplay').style.display='none'; };
+
+    $('testStudyModeBtn').addEventListener('click', () => {
+      if (!currentStudySet) return;
+      const data = JSON.parseSafe(currentStudySet.data); startTestStudyMode(data.flashcards || []);
+    });
+
+    function startTestStudyMode(flashcards) {
+      if (!flashcards || flashcards.length===0) { showMessage('No flashcards'); return; }
+      $('studyControls').style.display='none'; $('studyCardDisplay').style.display='block';
+      const display = $('studyCardDisplay');
+      let currentQuizIndex = 0, score = 0;
+      function renderQuizCard() {
+        if (currentQuizIndex >= flashcards.length) {
+          display.innerHTML = `<div class="card"><h3>${Math.round((score/flashcards.length)*100)}%</h3><p>You got ${score} of ${flashcards.length} correct</p><button class="btn" onclick="endStudyMode()">Done</button></div>`;
+          return;
+        }
+        const card = flashcards[currentQuizIndex];
+        const wrong = flashcards.filter((_,i)=>i!==currentQuizIndex).slice(0,3).map(c=>c.definition);
+        const all = [card.definition, ...wrong].sort(()=>Math.random()-0.5);
+        display.innerHTML = `<div class="card"><h3>${escapeHtml(card.term)}</h3><p>Select the correct definition:</p></div>` + all.map(a=>`<div style="margin-top:6px;"><button class="btn" onclick="checkQuizAnswer('${a.replace(/'/g,"\\'")}','${card.definition.replace(/'/g,"\\'")}')">${escapeHtml(a)}</button></div>`).join('') + `<div style="margin-top:8px;"><span class="small">Question ${currentQuizIndex+1} of ${flashcards.length}</span></div>`;
+      }
+      window.checkQuizAnswer = (selected, correct) => {
+        if (selected === correct) { score++; showMessage('Correct!'); } else showMessage('Incorrect');
+        currentQuizIndex++; setTimeout(renderQuizCard, 700);
+      };
+      renderQuizCard();
+    }
+
+    $('matchModeBtn').addEventListener('click', () => {
+      if (!currentStudySet) return;
+      const data = JSON.parseSafe(currentStudySet.data); startMatchMode(data.flashcards || []);
+    });
+
+    function startMatchMode(flashcards) {
+      if (!flashcards || flashcards.length === 0) { showMessage('No flashcards'); return; }
+      $('studyControls').style.display='none'; $('studyCardDisplay').style.display='block';
+      const display = $('studyCardDisplay');
+      const terms = flashcards.map(c => ({ text:c.term, matched:false }));
+      const definitions = flashcards.map(c => ({ text:c.definition, matched:false })).sort(()=>Math.random()-0.5);
+      let selected = null, matches = 0;
+      function render() {
+        if (matches === flashcards.length) { display.innerHTML = `<div class="card"><h3>All matches completed!</h3><button class="btn" onclick="endStudyMode()">Back</button></div>`; return; }
+        display.innerHTML = `<h3 style="text-align:center;">Match the terms with their definitions</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+          <div>${terms.map((t,i)=> t.matched?`<div style="opacity:0.4;padding:8px;">✓ ${escapeHtml(t.text)}</div>`:`<div class="card"><button class="btn" onclick="selectMatchItem(${i},'term')">${escapeHtml(t.text)}</button></div>`).join('')}</div>
+          <div>${definitions.map((d,i)=> d.matched?`<div style="opacity:0.4;padding:8px;">✓ ${escapeHtml(d.text)}</div>`:`<div class="card"><button class="btn" onclick="selectMatchItem(${i},'definition')">${escapeHtml(d.text)}</button></div>`).join('')}</div>
+        </div><div style="margin-top:8px;"><span class="small">Matches: ${matches}/${flashcards.length}</span></div>`;
+      }
+      window.selectMatchItem = (index, type) => {
+        if (!selected) { selected = { index, type }; render(); return; }
+        if (selected.type === type) { selected = { index, type }; render(); return; }
+        const term = type === 'term' ? terms[index] : terms[selected.index];
+        const def = type === 'definition' ? definitions[index] : definitions[selected.index];
+        const matched = flashcards.some(c => c.term === term.text && c.definition === def.text);
+        if (matched) { term.matched = true; def.matched = true; matches++; showMessage('Match!'); } else showMessage('Not a match');
+        selected = null; setTimeout(render, 300);
+      };
+      render();
+    }
+
+    window.selectGameSet = (id) => {
+      const set = appData.find(x => x.__backendId === id && x.type === 'flashcard_set');
+      if (!set) { showMessage('Set not found'); return; }
+      currentGameSet = set;
+      showSection('games');
+      $('gameSetList').innerHTML = `<div class="card"><h3>${escapeHtml(set.title)}</h3>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button class="btn" onclick="startMemoryTileGame()">Memory Tiles</button>
+          <button class="btn" onclick="startWordScramble()">Word Scramble</button>
+          <button class="btn" onclick="startSpeedQuiz()">Speed Quiz</button>
+        </div></div>`;
+    };
+
+    function startMemoryTileGame() {
+      if (!currentGameSet) return showMessage('No game set selected');
+      const data = JSON.parseSafe(currentGameSet.data);
+      const flashcards = data.flashcards || [];
+      const cards = flashcards.slice(0,8).flatMap(c=>[{ text:c.term, pair:c.definition, flipped:false, matched:false }, { text:c.definition, pair:c.term, flipped:false, matched:false }]).sort(()=>Math.random()-0.5);
+      let first=null, second=null, matches=0;
+      const canvas = $('gameSetList');
+      function render() {
+        if (matches === flashcards.slice(0,8).length) { canvas.innerHTML = `<div class="card"><h3>All pairs matched!</h3></div>`; return; }
+        canvas.innerHTML = `<h3>Memory Tiles - Matches: ${matches}/${flashcards.slice(0,8).length}</h3><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;">` + cards.map((card,i)=>`<div class="card" style="min-height:80px;display:flex;align-items:center;justify-content:center;cursor:${card.matched?'default':'pointer'}" onclick="flipMemoryCard(${i})">${card.flipped||card.matched?escapeHtml(card.text):'❓'}</div>`).join('') + `</div>`;
+      }
+      window.flipMemoryCard = (i) => {
+        if (cards[i].matched || cards[i].flipped) return;
+        cards[i].flipped = true;
+        if (first === null) { first = i; render(); return; }
+        second = i;
+        if (cards[first].pair === cards[second].text) {
+          cards[first].matched = true; cards[second].matched = true; matches++; showMessage('Match!');
+          first = null; second = null; render();
+        } else {
+          render();
+          setTimeout(()=>{ cards[first].flipped = false; cards[second].flipped = false; first = null; second = null; render(); }, 900);
+        }
+      };
+      render();
+    }
+
+    function startWordScramble() {
+      if (!currentGameSet) return showMessage('No game set');
+      const data = JSON.parseSafe(currentGameSet.data); const flashcards = data.flashcards || [];
+      let idx = 0, score = 0;
+      const canvas = $('gameSetList');
+      function scrambleWord(word) { return word.split('').sort(()=>Math.random()-0.5).join(''); }
+      function render() {
+        if (idx >= flashcards.length) { canvas.innerHTML = `<div class="card"><h3>Score: ${score}</h3></div>`; return; }
+        const card = flashcards[idx]; const scrambled = scrambleWord(card.term);
+        canvas.innerHTML = `<div class="card"><h3>Unscramble</h3><p style="font-size:28px;">${escapeHtml(scrambled)}</p><p class="small">Hint: ${escapeHtml(card.definition)}</p>
+          <input id="scrambleInput" placeholder="Your answer" />
+          <div style="margin-top:8px;"><button class="btn" onclick="checkScramble('${card.term.replace(/'/g,"\\'")}')">Submit</button> <button class="btn btn-danger" onclick="skipScramble()">Skip</button></div></div>`;
+      }
+      window.checkScramble = (correct) => {
+        const v = $('scrambleInput').value.trim();
+        if (v.toLowerCase() === correct.toLowerCase()) { score++; showMessage('Correct'); } else showMessage('Wrong: ' + correct);
+        idx++; render();
+      };
+      window.skipScramble = () => { idx++; render(); };
+      render();
+    }
+
+    function startSpeedQuiz() {
+      if (!currentGameSet) return showMessage('No game set');
+      const data = JSON.parseSafe(currentGameSet.data); const flashcards = data.flashcards || [];
+      let idx=0, score=0, timeLeft=60, timer=null;
+      const canvas = $('gameSetList');
+      function render() {
+        if (idx >= flashcards.length || timeLeft <= 0) { clearInterval(timer); canvas.innerHTML = `<div class="card"><h3>Score: ${score}</h3></div>`; return; }
+        const card = flashcards[idx]; const wrong = flashcards.filter((_,i)=>i!==idx).slice(0,3).map(c=>c.definition); const all = [card.definition, ...wrong].sort(()=>Math.random()-0.5);
+        canvas.innerHTML = `<div class="card"><h3>${escapeHtml(card.term)}</h3><p>Time: ${timeLeft}s | Score: ${score}</p>` + all.map(a=>`<div style="margin-top:6px;"><button class="btn" onclick="checkSpeed('${a.replace(/'/g,"\\'")}','${card.definition.replace(/'/g,"\\'")}')">${escapeHtml(a)}</button></div>`).join('') + `</div>`;
+      }
+      window.checkSpeed = (selected, correct) => {
+        if (selected === correct) { score += 10; showMessage('+10'); } else showMessage('Wrong');
+        idx++; render();
+      };
+      timer = setInterval(()=>{ timeLeft--; if (timeLeft<=0) render(); else { const h = canvas.querySelector('h3'); if (h) h.textContent = `Time: ${timeLeft}s`; } }, 1000);
+      render();
+    }
+
+    // --- Logout ---
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/auth.html';
+    });
+
+    // --- Settings save locally ---
+    document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+      const t = $('settingSiteTitle').value.trim();
+      const st = $('settingSiteSubtitle').value.trim();
+      const bg = $('settingBg').value.trim();
+      if (t) $('siteTitle').textContent = t;
+      if (st) $('siteSubtitle').textContent = st;
+      if (bg) document.body.style.background = bg;
+      showMessage('Settings applied (local only).');
+    });
+
+    window.JSON.parseSafe = (txt) => { try { return JSON.parse(txt); } catch(e) { return {}; } };
+
+    // --- Initialize app ---
+    (async () => {
+      document.getElementById('createSetBtnTop').addEventListener('click', ()=> { showSection('create'); });
+      await checkAuthAndStart();
+      showSection('home');
+      renderFlashcardCreator();
+    })();
+  </script>
+</body>
+</html>
