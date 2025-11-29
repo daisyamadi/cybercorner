@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login | Cyber Corner</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      font-family: system-ui, sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .card {
+      background: white;
+      padding: 24px;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+    }
+    .btn {
+      background: linear-gradient(135deg,#667eea,#764ba2);
+      color: white;
+      padding: 10px;
+      width: 100%;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      border: none;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    .link {
+      color: #667eea;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .error {
+      background: #ffdddd;
+      color: #a10000;
+      padding: 8px;
+      border-radius: 8px;
+      margin-top: 12px;
+      display: none;
+    }
+    .success {
+      background: #ddffdd;
+      color: #006600;
+      padding: 8px;
+      border-radius: 8px;
+      margin-top: 12px;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1 class="text-2xl font-bold text-center mb-4">Cyber Corner</h1>
+    <p class="text-center text-gray-600 mb-6">Login or Create an Account</p>
+
+    <!-- Error + Success Messages -->
+    <div id="errorBox" class="error"></div>
+    <div id="successBox" class="success"></div>
+
+    <!-- Login Form -->
+    <div id="loginForm">
+      <input id="loginEmail" class="w-full p-2 border-2 border-gray-300 rounded mb-3" type="email" placeholder="Email">
+      <input id="loginPassword" class="w-full p-2 border-2 border-gray-300 rounded mb-3" type="password" placeholder="Password">
+      <button id="loginBtn" class="btn">Log In</button>
+      <div class="text-center mt-4">
+        <span class="text-gray-700">Don't have an account?</span>
+        <span id="showSignup" class="link">Sign Up</span>
+      </div>
+    </div>
+
+    <!-- Signup Form -->
+    <div id="signupForm" style="display:none;">
+      <input id="signupEmail" class="w-full p-2 border-2 border-gray-300 rounded mb-3" type="email" placeholder="Email">
+      <input id="signupPassword" class="w-full p-2 border-2 border-gray-300 rounded mb-3" type="password" placeholder="Password (6+ chars)">
+      <button id="signupBtn" class="btn">Create Account</button>
+      <div class="text-center mt-4">
+        <span class="text-gray-700">Already have an account?</span>
+        <span id="showLogin" class="link">Log In</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase -->
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const SUPABASE_URL = 'https://ggxzenrclteljxtqrwev.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdneHplbnJjbHRlbGp4dHFyd2V2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0NDQ4MDYsImV4cCI6MjA4MDAyMDgwNn0.yA8nKgkdyW8BH1v5eYFt8vd-8XOEVUnHDnPY8ykKo8Y';
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const loginForm = document.getElementById("loginForm");
+    const signupForm = document.getElementById("signupForm");
+
+    const errorBox = document.getElementById("errorBox");
+    const successBox = document.getElementById("successBox");
+
+    function showError(msg) {
+      errorBox.style.display = "block";
+      errorBox.textContent = msg;
+    }
+
+    function showSuccess(msg) {
+      successBox.style.display = "block";
+      successBox.textContent = msg;
+    }
+
+    function clearMessages() {
+      errorBox.style.display = "none";
+      successBox.style.display = "none";
+    }
+
+    // Switch Forms
+    document.getElementById("showSignup").onclick = () => {
+      loginForm.style.display = "none";
+      signupForm.style.display = "block";
+      clearMessages();
+    };
+
+    document.getElementById("showLogin").onclick = () => {
+      signupForm.style.display = "none";
+      loginForm.style.display = "block";
+      clearMessages();
+    };
+
+    // LOGIN
+    document.getElementById("loginBtn").onclick = async () => {
+      clearMessages();
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+
+      if (!email || !password) {
+        showError("Please enter email and password.");
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        showError(error.message);
+        return;
+      }
+
+      showSuccess("Logged in! Redirecting...");
+      setTimeout(() => {
+        window.location.href = "./index.html";
+      }, 800);
+    };
+
+    // SIGNUP
+    document.getElementById("signupBtn").onclick = async () => {
+      clearMessages();
+      const email = document.getElementById("signupEmail").value.trim();
+      const password = document.getElementById("signupPassword").value.trim();
+
+      if (!email || !password) {
+        showError("Please enter email and password.");
+        return;
+      }
+
+      if (password.length < 6) {
+        showError("Password must be at least 6 characters.");
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        showError(error.message);
+        return;
+      }
+
+      showSuccess("Signup complete! Please check your email to verify your account.");
+    };
+
+    // If user is already logged in → redirect to app
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        window.location.href = "./index.html";
+      }
+    })();
+  </script>
+
+</body>
+</html>
